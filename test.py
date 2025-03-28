@@ -1,35 +1,30 @@
+from flask import Flask, request, jsonify
 import pytesseract
-import PIL.Image
 import cv2
-from pytesseract import Output
+import numpy as np
+from PIL import Image
 
 myconfig = r"--psm 6 --oem 3"
 
-text = pytesseract.image_to_string(PIL.Image.open("rec1.jpg"), config=myconfig)
-print(text)
+app = Flask(__name__)
 
-img = cv2.imread("rec1.jpg")
-height, width, _ = img.shape
+@app.route("/scan", methods=["POST"])
+def scan_receipt():
+    if 'image' not in request.files:
+        return jsonify({"error": "No image sent"}), 400
 
-boxes =  pytesseract.image_to_boxes(img, config = myconfig)
-# print(boxes)
+    file = request.files['image']
+    image = Image.open(file.stream).convert("RGB")
+    image_np = np.array(image)
 
-# for box in boxes.splitlines():
-#     box = box.split(" ")
-#     img = cv2.rectangle(img, (int(box[1]), height - int(box[2])), (int(box[3]), height - int(box[4])), (255,255,0), 2)
+    # Procesare imagine cu OpenCV
+    # gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+    # thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-data = pytesseract.image_to_data("rec1.jpg", config = myconfig, output_type=Output.DICT)
+    # OCR
+    text = pytesseract.image_to_string(image, config=myconfig, lang="ron")
 
-print(data['text'])
+    return jsonify({"text": text})
 
-amount_boxes = len(data['text'])
-for i in range(amount_boxes):
-    if float(data['conf'][i]) > 80:
-        (x, y, width, height) = (data['left'][i], data['top'][i], data['width'][i],data['height'][i])
-        img = cv2.rectangle(img, (x,y) , (x+width, y+height), (0,225,0), 2)
-        #img = cv2.putText(img, data['text'][i], (x, y+height+20), cv2.FONT_HERSHEY_DUPLEX, 0.7, (0,255,0), 2, cv2.LINE_AA)
-
-
-
-cv2.imshow("img", img)
-cv2.waitKey(0)
+if __name__ == "__main__":
+    app.run(debug=True)
