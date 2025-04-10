@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:expense_app/views/history_view.dart';
 import 'package:expense_app/views/settings_view.dart';
 import 'package:expense_app/views/scan_view.dart';
+import 'package:expense_app/services/ocr_receipt_service.dart';
+import 'package:expense_app/services/save_receipt_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -44,7 +44,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   String extractedDate = "-";
   String extractedTotal = "-";
-  String extractedQuantity = "-";
   String extractedMerchant = "-";
 
   int _selectedIndex = 0;
@@ -58,18 +57,15 @@ class _MyHomePageState extends State<MyHomePage> {
   void extractFields(String text) {
     final dateRegex = RegExp(r'\b\d{2}[./-]\d{2}[./-]\d{4}\b');
     final totalRegex = RegExp(r'(total|sumă|amount)\s*[:\-]?\s*(\d+[.,]?\d*)', caseSensitive: false);
-    final quantityRegex = RegExp(r'\b(x\s*\d+|\d+\s*buc|\d+\s*pcs)', caseSensitive: false);
     final merchantRegex = RegExp(r'(?:S\.?C\.?\s+)([A-Z\s]+?)(?:\s+S\.?R\.?L\.?|S\.?A\.?)');
 
     final dateMatch = dateRegex.firstMatch(text);
     final totalMatch = totalRegex.firstMatch(text);
-    final qtyMatch = quantityRegex.firstMatch(text);
     final merchantMatch = merchantRegex.firstMatch(text);
 
     setState(() {
       extractedDate = dateMatch?.group(0) ?? "-";
       extractedTotal = totalMatch != null ? totalMatch.group(2)! : "-";
-      extractedQuantity = qtyMatch?.group(0) ?? "-";
       extractedMerchant = merchantMatch != null ? merchantMatch.group(1)!.trim() : "-";
     });
   }
@@ -85,33 +81,18 @@ class _MyHomePageState extends State<MyHomePage> {
         _wasCleared = false;
         extractedDate = "-";
         extractedTotal = "-";
-        extractedQuantity = "-";
         extractedMerchant = "-";
       });
 
       try {
-        final uri = Uri.parse("http://10.0.2.2:5000/scan");
-        final request = http.MultipartRequest("POST", uri);
-        request.files.add(await http.MultipartFile.fromPath("image", pickedFile.path));
-
-        final response = await request.send();
-        final responseBody = await response.stream.bytesToString();
-
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(responseBody);
-          final scannedText = decoded['text'] ?? "Text empty.";
-          setState(() {
-            _ocrText = scannedText;
-          });
-          extractFields(scannedText);
-        } else {
-          setState(() {
-            _ocrText = "Server error: \${response.statusCode}";
-          });
-        }
+        final scannedText = await scanReceiptFromImage(pickedFile.path);
+        setState(() {
+          _ocrText = scannedText;
+        });
+        extractFields(scannedText);
       } catch (e) {
         setState(() {
-          _ocrText = "Connection error: \$e";
+          _ocrText = "Connection error: $e";
         });
       } finally {
         setState(() {
@@ -145,7 +126,6 @@ class _MyHomePageState extends State<MyHomePage> {
         _wasCleared = true;
         extractedDate = "-";
         extractedTotal = "-";
-        extractedQuantity = "-";
         extractedMerchant = "-";
       });
     }
@@ -154,11 +134,9 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _validateInput(String label, String value) {
     switch (label) {
       case "Date:":
-        return RegExp(r'^\d{2}[./-]\d{2}[./-]\d{4}\$').hasMatch(value);
+        return RegExp(r'^\d{2}[./-]\d{2}[./-]\d{4}$').hasMatch(value);
       case "Total:":
-        return RegExp(r'^\d+[.,]?\d*\$').hasMatch(value);
-      case "Quantity:":
-        return RegExp(r'^(x\s*\d+|\d+\s*buc|\d+\s*pcs)\$').hasMatch(value);
+        return RegExp(r'^\d+[.,]?\d*$').hasMatch(value);
       case "Merchant:":
         return value.isNotEmpty && !RegExp(r'\d').hasMatch(value);
       default:
@@ -166,7 +144,20 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _saveReceipt() {
+  Future<void> _saveReceipt() async {
+    if (extractedDate == "-" || extractedTotal == "-" || extractedMerchant == "-") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Missing required fields.")),
+      );
+      return;
+    }
+
+    await sendReceiptToServer(
+      date: extractedDate,
+      total: extractedTotal,
+      merchant: extractedMerchant,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Receipt saved successfully!")),
     );
@@ -190,7 +181,6 @@ class _MyHomePageState extends State<MyHomePage> {
               onSave: _saveReceipt,
               extractedDate: extractedDate,
               extractedTotal: extractedTotal,
-              extractedQuantity: extractedQuantity,
               extractedMerchant: extractedMerchant,
               onEditField: (label, value) {
                 if (_validateInput(label, value)) {
@@ -202,9 +192,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       case "Total:":
                         extractedTotal = value;
                         break;
-                      case "Quantity:":
-                        extractedQuantity = value;
-                        break;
                       case "Merchant:":
                         extractedMerchant = value;
                         break;
@@ -212,7 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   });
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Invalid format for \$label")),
+                    SnackBar(content: Text("Invalid format for $label")),
                   );
                 }
               },

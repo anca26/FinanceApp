@@ -10,7 +10,7 @@ class ScanView extends StatelessWidget {
 
   final String extractedDate;
   final String extractedTotal;
-  final String extractedQuantity;
+  //final String extractedQuantity;
   final String extractedMerchant;
 
   final Color myBlue = const Color.fromARGB(255, 45, 51, 107);
@@ -27,7 +27,7 @@ class ScanView extends StatelessWidget {
     required this.onSave, 
     required this.extractedDate,
     required this.extractedTotal,
-    required this.extractedQuantity,
+    //required this.extractedQuantity,
     required this.extractedMerchant,
     required this.onEditField,
   });
@@ -158,8 +158,8 @@ class ScanView extends StatelessWidget {
                       buildEditableRow(context, "Date:", extractedDate),
                       const SizedBox(height: 8),
                       buildEditableRow(context, "Total:", extractedTotal),
-                      const SizedBox(height: 8),
-                      buildEditableRow(context, "Quantity:", extractedQuantity),
+                      //const SizedBox(height: 8),
+                      //buildEditableRow(context, "Quantity:", extractedQuantity),
                       const SizedBox(height: 8),
                       buildEditableRow(context, "Merchant:", extractedMerchant),
                       const SizedBox(height: 20),

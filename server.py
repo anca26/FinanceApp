@@ -1,3 +1,4 @@
+import json
 from flask import Flask, request, jsonify
 import pytesseract
 import cv2
@@ -35,6 +36,18 @@ def scan_receipt():
     except Exception as e:
         print(f"Error during processing: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+@app.route("/save", methods=["POST"])
+def save_receipt():
+    data = request.get_json()
+    print("Received receipt data:", data)
+
+    with open("receipts.json", "a") as f:
+        json.dump(data, f)
+        f.write("\n")
+
+    return jsonify({"message": "Receipt saved"}), 200
+
 
 
 if __name__ == "__main__":
