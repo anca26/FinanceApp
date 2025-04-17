@@ -49,7 +49,6 @@ def save_receipt():
     return jsonify({"message": "Receipt saved"}), 200
 
 
-
 if __name__ == "__main__":
     print("Starting Flask server")
     app.run(debug=True)
