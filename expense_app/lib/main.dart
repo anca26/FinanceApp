@@ -144,24 +144,34 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _saveReceipt() async {
-    if (extractedDate == "-" || extractedTotal == "-" || extractedMerchant == "-") {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Missing required fields.")),
-      );
-      return;
-    }
-
-    await sendReceiptToServer(
+void _saveReceipt() async {
+  try {
+    final response = await sendReceiptToServer(
       date: extractedDate,
       total: extractedTotal,
       merchant: extractedMerchant,
     );
 
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Receipt saved successfully.")),
+      );
+    } else if (response.statusCode == 409) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Receipt already saved.")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to save receipt: ${response.statusCode}")),
+      );
+    }
+  } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Receipt saved successfully!")),
+      SnackBar(content: Text("Error: $e")),
     );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

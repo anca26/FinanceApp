@@ -11,7 +11,18 @@ def save_receipt():
     if not all(k in data for k in ("date", "total", "merchant")):
         return jsonify({"error": "Missing fields"}), 400
 
+    existing = Receipt.query.filter_by(
+        date=data['date'],
+        total=data['total'],
+        merchant=data['merchant']
+    ).first()
+
+    if existing:
+        print("Receipt already saved")
+        return jsonify({"message": "Receipt already saved"}), 409
+
     receipt = Receipt(date=data['date'], total=data['total'], merchant=data['merchant'])
+
     try:
         print("Adding the receipt to database..")
         db.session.add(receipt)

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-Future<void> sendReceiptToServer({
+Future<http.Response> sendReceiptToServer({
   required String date,
   required String total,
   required String merchant,
@@ -18,13 +18,8 @@ Future<void> sendReceiptToServer({
         'merchant': merchant,
       }),
     );
-
-    if (response.statusCode == 200) {
-      print("Receipt saved successfully: ${response.body}");
-    } else {
-      print("Failed to save receipt: ${response.statusCode}");
-    }
+    return response;
   } catch (e) {
-    print("Error sending receipt: $e");
+    throw Exception("Error sending receipt: $e");
   }
 }
