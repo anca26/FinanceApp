@@ -1,2 +1,17 @@
-{"date": "24/03/2016", "total": "56,36", "merchant": "LIDL DISCOUNT"}
-{"date": "24/03/2016", "total": "56,36", "merchant": "LIDL DISCOUNT"}
+[
+  {
+    "date": "24/03/2016",
+    "total": "56,36",
+    "merchant": "LIDL DISCOUNT"
+  },
+  {
+    "date": "24/03/2016",
+    "total": "56,36",
+    "merchant": "LIDL DISCOUNT"
+  },
+  {
+    "date": "24/03/2016",
+    "total": "56,36",
+    "merchant": "LIDL DISCOUNT"
+  }
+]

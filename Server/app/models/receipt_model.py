@@ -1,12 +1,15 @@
-class Receipt:
-    def __init__(self, date, total, merchant):
-        self.date = date
-        self.total = total
-        self.merchant = merchant
+from app import db
+
+class Receipt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.String(20), nullable= False)
+    total = db.Column(db.String(20), nullable=False)
+    merchant = db.Column(db.String(100), nullable=False)
 
     def to_dict(self):
         return {
-            "date": self.date,
-            "total": self.total,
-            "merchant": self.merchant
+            'id': self.id,
+            'date': self.date,
+            'total': self.total,
+            'merchant': self.merchant
         }

@@ -1,6 +1,7 @@
-from flask import Blueprint,request, jsonify
+from flask import Blueprint, request, jsonify
+from app import db
 from app.models.receipt_model import Receipt
-from app.utils.file_helpers import load_receipts, save_receipts
+from sqlalchemy.exc import SQLAlchemyError
 
 save_bp = Blueprint('save', __name__)
 
@@ -10,13 +11,17 @@ def save_receipt():
     if not all(k in data for k in ("date", "total", "merchant")):
         return jsonify({"error": "Missing fields"}), 400
 
-    receipt = Receipt(**data)
-    receipts = load_receipts()
-    receipts.append(receipt.to_dict())
-    save_receipts(receipt)
-    return jsonify({"message":"Receipt saved"}), 200
+    receipt = Receipt(date=data['date'], total=data['total'], merchant=data['merchant'])
+    try:
+        print("Adding the receipt to database..")
+        db.session.add(receipt)
+        db.session.commit()
+        print("Receipt added succesfully")
+    except SQLAlchemyError as e:
+        print(f"Error at adding receipt: {e}")
+    return jsonify({"message": "Receipt saved"}), 200
 
 @save_bp.route("/receipts", methods=["GET"])
 def get_receipts():
-    receipts = load_receipts()
-    return jsonify(receipts)
+    receipts = Receipt.query.all()
+    return jsonify([r.to_dict() for r in receipts])
