@@ -19,9 +19,11 @@ def create_app():
 
     from app.routes.ocr_routes import ocr_bp
     from app.routes.save_routes import save_bp
+    from app.routes.history_routes import history_bp
 
     app.register_blueprint(ocr_bp)
     app.register_blueprint(save_bp)
+    app.register_blueprint(history_bp)
 
     try:
         print("Creating database")

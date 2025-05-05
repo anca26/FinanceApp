@@ -33,8 +33,8 @@ dependencies:
   image_picker: ^1.0.7 # For picking receipt images
   http: ^1.2.0 # For sending images to backend
   sqflite: ^2.3.0 # Local database for storing expenses
-  fl_chart: ^0.65.0 # Beautiful charts for analytics
-
+  fl_chart: ^0.65.0 # charts for analytics
+  intl: ^0.18.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
