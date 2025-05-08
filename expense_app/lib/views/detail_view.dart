@@ -12,12 +12,12 @@ class ReceiptDetailsPage extends StatelessWidget {
   final confirm = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Esti sigur?'),
-      content: const Text('Vrei sa stergi acest bon? Actiunea este permanenta.'),
+      title: const Text('You sure?'),
+      content: const Text('Do you want to delete this receipt? This action is irreversible.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Nu'),
+          child: const Text('No'),
         ),
         ElevatedButton(
           onPressed: () async {
@@ -27,12 +27,12 @@ class ReceiptDetailsPage extends StatelessWidget {
               Navigator.of(context).pop(receipt.id);
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Eroare la stergere')),
+                const SnackBar(content: Text('Error at deleting receipt')),
               );
             }
           },
           style: ElevatedButton.styleFrom(backgroundColor: Color.fromARGB(255, 60, 51, 139)),
-          child: const Text('Sterge', style: TextStyle(color: Colors.white)),
+          child: const Text('Delete', style: TextStyle(color: Colors.white)),
         ),
       ],
     ),
