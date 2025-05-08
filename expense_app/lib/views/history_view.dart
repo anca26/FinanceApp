@@ -2,13 +2,16 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'detail_view.dart';
 
 class Receipt {
+  final int id;
   final String merchant;
   final DateTime date;
   final double total;
+  String category;
 
-  Receipt({required this.merchant, required this.date, required this.total});
+  Receipt({required this.id,required this.merchant, required this.date, required this.total, this.category = "Others"});
 
   factory Receipt.fromJson(Map<String, dynamic> json) {
     DateTime parsedDate;
@@ -19,9 +22,11 @@ class Receipt {
     }
 
     return Receipt(
-      merchant: json['merchant'],
+      id: json['id'],
+      merchant: json['merchant'] ?? 'Unknown Merchant',
       date: parsedDate,
-      total: double.parse(json['total'].replaceAll(',', '.')),
+      total: double.tryParse(json['total'].replaceAll(',', '.')) ?? 0.0,
+      category: json['category'] ?? 'Others',
     );
   }
 }
@@ -106,78 +111,93 @@ class _HistoryViewState extends State<HistoryView> {
   Widget build(BuildContext context) {
     final groupedReceipts = groupReceiptsByDay(filteredReceipts);
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextField(
-            controller: searchController,
-            decoration: const InputDecoration(
-              hintText: 'Search receipts',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                hintText: 'Search receipts',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
               ),
             ),
           ),
-        ),
-        Expanded(
-          child: groupedReceipts.isEmpty
-              ? const Center(child: Text('Nu exista bonuri'))
-              : ListView(
-                  children: groupedReceipts.entries.map((entry) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              '${entry.key}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+          Expanded(
+            child: groupedReceipts.isEmpty
+                ? const Center(child: Text('Nu exista bonuri'))
+                : ListView(
+                    children: groupedReceipts.entries.map((entry) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(
+                                '${entry.key}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          ...entry.value.map((receipt) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 6.0),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: myBlue.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: myBlue.withOpacity(0.1),
-                                      spreadRadius: 2,
-                                      blurRadius: 5,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: ListTile(
-                                  title: Text(
-                                    receipt.merchant,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                            ...entry.value.map((receipt) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: myBlue.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: myBlue.withOpacity(0.1),
+                                        spreadRadius: 2,
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
                                   ),
-                                  subtitle: Text('${receipt.total.toStringAsFixed(2)} RON'),
-                                  leading: const Icon(Icons.receipt_long),
-                                  onTap: () {
-                                    // navigare catre detalii
-                                  },
+                                  child: ListTile(
+                                    title: Text(
+                                      receipt.merchant,
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    subtitle: Text('${receipt.total.toStringAsFixed(2)} RON'),
+                                    leading: const Icon(Icons.receipt_long),
+                                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                                    onTap: () async {
+                                      final deletedId = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ReceiptDetailsPage(receipt: receipt),
+                                        ),
+                                      );
+
+                                      if (deletedId != null) {
+                                        setState(() {
+                                          allReceipts.removeWhere((r) => r.id == deletedId);
+                                          filteredReceipts.removeWhere((r) => r.id == deletedId);
+                                        });
+                                      }
+                                    },
+                                  ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-        )
-      ],
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          )
+        ],
+      ),
     );
   }
 }

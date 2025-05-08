@@ -1,9 +1,24 @@
 from flask import Blueprint, request, jsonify
 import pytesseract
-from PIL import Image
+from PIL import Image, ImageEnhance
 import numpy as np
+import cv2
 
 ocr_bp = Blueprint('ocr', __name__)
+
+
+def preprocess_image(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+    gray = cv2.fastNlMeansDenoising(gray, h=30)
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Increase contrast
+    pil_image = Image.fromarray(binary)
+    enhancer = ImageEnhance.Contrast(pil_image)
+    enhanced_image = enhancer.enhance(2.0)
+    return np.array(enhanced_image)
+
 
 @ocr_bp.route("/scan", methods=["POST"])
 def scan_receipt():
@@ -14,18 +29,17 @@ def scan_receipt():
 
     try:
         file = request.files['image']
-        print(f"Image received:{file.filename}")
+        print(f"Image received: {file.filename}")
 
         image = Image.open(file.stream).convert("RGB")
         image_np = np.array(image)
-        print("Image converted to RGB and transformed into numpy array")
+        processed_image = preprocess_image(image_np)
+        print("Image preprocessed")
 
-        print("Running OCR with pytesseract..")
-        text = pytesseract.image_to_string(image_np, config="--psm 6 --oem 3", lang="ron")
+        text = pytesseract.image_to_string(processed_image, config="--psm 6 --oem 3", lang="ron")
         print("OCR completed")
 
-
-        return jsonify({"text":text})
+        return jsonify({"text": text})
 
     except Exception as e:
         print(f"Error during OCR image processing: {str(e)}")
